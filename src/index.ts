@@ -45,7 +45,7 @@ applyMixins(TripletexClient, resourceMixins as unknown as Array<new (...args: ne
 export { TripletexClient };
 export * from './errors';
 export * from './types';
-export { TRIPLETEX_PROD_BASE_URL } from './utils';
+export { TRIPLETEX_PROD_BASE_URL, TRIPLETEX_TEST_BASE_URL } from './utils';
 export default TripletexClient;
 
 function applyMixins(

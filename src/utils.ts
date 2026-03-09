@@ -1,6 +1,16 @@
-import type { QueryParams, QueryValue, TripletexResponseMeta } from './types';
+import type {
+  QueryParams,
+  QueryValue,
+  TripletexEnvironment,
+  TripletexResponseMeta
+} from './types';
 
 export const TRIPLETEX_PROD_BASE_URL = 'https://tripletex.no/v2';
+export const TRIPLETEX_TEST_BASE_URL = 'https://api-test.tripletex.tech/v2';
+
+export function resolveBaseUrl(environment: TripletexEnvironment = 'prod'): string {
+  return environment === 'test' ? TRIPLETEX_TEST_BASE_URL : TRIPLETEX_PROD_BASE_URL;
+}
 
 export function toQueryString(params?: QueryParams): string {
   if (!params) {

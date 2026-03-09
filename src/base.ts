@@ -12,8 +12,8 @@ import {
   buildBasicAuth,
   buildResponseMeta,
   compilePath,
+  resolveBaseUrl,
   toQueryString,
-  TRIPLETEX_PROD_BASE_URL
 } from './utils';
 
 export class BaseClient {
@@ -25,7 +25,7 @@ export class BaseClient {
   private companyId: number | string;
 
   constructor(config: TripletexClientConfig = {}) {
-    this.baseUrl = trimTrailingSlash(config.baseUrl ?? TRIPLETEX_PROD_BASE_URL);
+    this.baseUrl = trimTrailingSlash(config.baseUrl ?? resolveBaseUrl(config.environment));
     this.fetchImpl = config.fetchImpl ?? fetch;
     this.defaultHeaders = config.defaultHeaders ?? {};
     this.maxRateLimitRetries = config.maxRateLimitRetries ?? 1;

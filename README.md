@@ -1,8 +1,8 @@
 # tripletex.js
 
-TypeScript SDK for the Tripletex API (production environment).
+TypeScript SDK for the Tripletex API.
 
-Default API base URL: `https://tripletex.no/v2`
+Default API base URL: `https://tripletex.no/v2` (prod)
 
 ## Install
 
@@ -26,6 +26,14 @@ client.useSessionToken(session.token, 0);
 
 const customers = await client.Customer_search({
   query: { from: 0, count: 100, fields: 'id,name' },
+});
+```
+
+Use test environment by setting `environment: 'test'`:
+
+```ts
+const client = new TripletexClient({
+  environment: 'test',
 });
 ```
 
@@ -125,15 +133,21 @@ Every `*WithMeta` method returns:
 
 ## Full API surface
 
-All OpenAPI operations from `docs/openapi.json` are generated into typed method signatures and grouped into resource mixins:
+All OpenAPI operations from the OpenAPI specs are generated into typed method signatures and grouped into resource mixins:
 - each method has operation-specific `path`, `query`, and `body` argument types
 - required path/body parameters are enforced at compile time
 - each method returns the exact success payload type from the spec
 
-Regenerate after spec updates:
+Regenerate from production spec:
 
 ```bash
 npm run generate:resources
+```
+
+Regenerate from test spec:
+
+```bash
+npm run generate:resources:test
 ```
 
 ## Development

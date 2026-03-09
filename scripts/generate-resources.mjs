@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 
 const rootDir = process.cwd();
-const specPath = path.join(rootDir, "docs", "openapi.json");
+const specPath = resolveSpecPath(process.argv.slice(2));
 const outputDir = path.join(rootDir, "src", "generated");
 
 const spec = JSON.parse(fs.readFileSync(specPath, "utf8"));
@@ -17,8 +17,25 @@ fs.writeFileSync(path.join(outputDir, "operations.ts"), operationsFile);
 fs.writeFileSync(path.join(outputDir, "resources.ts"), resourcesFile);
 
 console.log(
-  `Generated ${operations.length} operations across ${Object.keys(resources).length} resources.`,
+  `Generated ${operations.length} operations across ${Object.keys(resources).length} resources from ${path.relative(rootDir, specPath)}.`,
 );
+
+function resolveSpecPath(argv) {
+  const specArgIndex = argv.findIndex((entry) => entry === "--spec");
+  const defaultSpec = path.join(rootDir, "docs", "openapi-prod.json");
+  if (specArgIndex === -1) {
+    return defaultSpec;
+  }
+
+  const rawSpecPath = argv[specArgIndex + 1];
+  if (!rawSpecPath) {
+    throw new Error("Missing value for --spec");
+  }
+
+  return path.isAbsolute(rawSpecPath)
+    ? rawSpecPath
+    : path.join(rootDir, rawSpecPath);
+}
 
 function collectOperations(pathsObject) {
   const methodOrder = ["get", "post", "put", "patch", "delete"];

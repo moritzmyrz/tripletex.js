@@ -18,7 +18,9 @@
     "test": "jest --runInBand",
     "test:ci": "jest --runInBand --coverage",
     "check": "npm run typecheck && npm run lint && npm run test",
-    "generate:resources": "openapi-typescript docs/openapi.json -o src/generated/openapi.ts && node scripts/generate-resources.mjs"
+    "generate:resources": "npm run generate:resources:prod",
+    "generate:resources:prod": "openapi-typescript docs/openapi-prod.json -o src/generated/openapi.ts && node scripts/generate-resources.mjs --spec docs/openapi-prod.json",
+    "generate:resources:test": "openapi-typescript docs/openapi-test.json -o src/generated/openapi.ts && node scripts/generate-resources.mjs --spec docs/openapi-test.json"
   },
   "engines": {
     "node": ">=18"

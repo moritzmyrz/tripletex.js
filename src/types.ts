@@ -1,5 +1,6 @@
 export type QueryPrimitive = string | number | boolean;
 export type QueryValue = QueryPrimitive | ReadonlyArray<QueryPrimitive> | null | undefined;
+export type TripletexEnvironment = 'prod' | 'test';
 
 export type QueryParams = Record<string, QueryValue>;
 
@@ -8,6 +9,7 @@ export interface TripletexClientConfig {
   employeeToken?: string;
   sessionToken?: string;
   companyId?: number | string;
+  environment?: TripletexEnvironment;
   baseUrl?: string;
   defaultHeaders?: HeadersInit;
   fetchImpl?: typeof fetch;

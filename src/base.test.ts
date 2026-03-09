@@ -39,6 +39,24 @@ describe('Base transport behavior', () => {
     );
   });
 
+  it('uses test environment base url when configured', async () => {
+    const fetchMock = jest.fn().mockResolvedValue(
+      new Response(JSON.stringify({ values: [] }), {
+        status: 200,
+        headers: {
+          'content-type': 'application/json'
+        }
+      })
+    );
+    global.fetch = fetchMock as unknown as typeof fetch;
+
+    const client = new TripletexClient({ environment: 'test' });
+    await client.Country_search();
+
+    const [url] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url.startsWith('https://api-test.tripletex.tech/v2/')).toBe(true);
+  });
+
   it('throws typed error with request metadata on non-2xx responses', async () => {
     const fetchMock = jest.fn().mockImplementation(async () =>
       new Response(
