@@ -1,6 +1,6 @@
 {
-  "name": "tripletex.js",
-  "version": "0.1.0",
+  "name": "@moritzmyrz/tripletex.js",
+  "version": "0.1.1",
   "description": "TypeScript SDK for the Tripletex API",
   "license": "GPL-3.0-or-later",
   "main": "dist/index.cjs",
