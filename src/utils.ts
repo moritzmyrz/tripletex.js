@@ -53,6 +53,13 @@ function appendValue(search: URLSearchParams, key: string, value: QueryValue): v
     return;
   }
 
+  if (Array.isArray(value)) {
+    for (const entry of value) {
+      search.append(key, String(entry));
+    }
+    return;
+  }
+
   search.append(key, String(value));
 }
 

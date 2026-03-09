@@ -27,15 +27,13 @@ describe('Base transport behavior', () => {
 
     await client.Company_get({
       path: { id: 123 },
-      query: { fields: 'id,name', from: 0, count: 50 }
+      query: { fields: 'id,name' }
     });
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
     const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
     expect(url).toContain('/company/123');
     expect(url).toContain('fields=id%2Cname');
-    expect(url).toContain('from=0');
-    expect(url).toContain('count=50');
     expect(new Headers(init.headers).get('authorization')).toBe(
       `Basic ${Buffer.from('42:session-token').toString('base64')}`
     );
@@ -64,7 +62,7 @@ describe('Base transport behavior', () => {
     global.fetch = fetchMock as unknown as typeof fetch;
 
     const client = new TripletexClient();
-    await expect(client.Company_get()).rejects.toMatchObject({
+    await expect(client.Country_search()).rejects.toMatchObject({
       status: 401,
       tripletexError: {
         code: 3000
@@ -73,6 +71,6 @@ describe('Base transport behavior', () => {
         requestId: 'req-401'
       }
     });
-    await expect(client.Company_get()).rejects.toBeInstanceOf(TripletexRequestError);
+    await expect(client.Country_search()).rejects.toBeInstanceOf(TripletexRequestError);
   });
 });

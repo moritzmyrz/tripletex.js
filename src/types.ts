@@ -1,4 +1,5 @@
-export type QueryValue = string | number | boolean | null | undefined;
+export type QueryPrimitive = string | number | boolean;
+export type QueryValue = QueryPrimitive | ReadonlyArray<QueryPrimitive> | null | undefined;
 
 export type QueryParams = Record<string, QueryValue>;
 
@@ -66,10 +67,14 @@ export interface SessionToken {
   expirationDate?: string;
 }
 
-export interface GeneratedMethodArgs {
-  path?: Record<string, string | number>;
-  query?: QueryParams;
-  body?: unknown;
+export interface GeneratedMethodArgs<
+  PathParams = Record<string, string | number>,
+  Query = QueryParams,
+  Body = unknown
+> {
+  path?: PathParams;
+  query?: Query;
+  body?: Body;
   headers?: HeadersInit;
 }
 

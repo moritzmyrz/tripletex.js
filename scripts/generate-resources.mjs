@@ -25,16 +25,39 @@ function collectOperations(pathsObject) {
   const result = [];
 
   for (const [routePath, routeMethods] of Object.entries(pathsObject)) {
+    const routeParameters = Array.isArray(routeMethods.parameters)
+      ? routeMethods.parameters
+      : [];
+
     for (const methodName of methodOrder) {
       const operation = routeMethods[methodName];
       if (!operation?.operationId) {
         continue;
       }
 
+      const operationParameters = Array.isArray(operation.parameters)
+        ? operation.parameters
+        : [];
+      const allParameters = [...routeParameters, ...operationParameters];
+      const hasRequiredPathParams = allParameters.some(
+        (parameter) =>
+          parameter &&
+          typeof parameter === "object" &&
+          parameter.in === "path" &&
+          parameter.required !== false,
+      );
+      const hasRequiredBody =
+        operation.requestBody &&
+        typeof operation.requestBody === "object" &&
+        operation.requestBody.required === true;
+
       result.push({
         operationId: sanitizeIdentifier(operation.operationId),
+        openApiOperationId: operation.operationId,
         path: routePath,
         method: methodName.toUpperCase(),
+        hasRequiredPathParams,
+        hasRequiredBody,
       });
     }
   }
@@ -112,9 +135,19 @@ function toPascalCase(input) {
 function buildOperationsFile(operationsList) {
   const lines = [
     "import type { OperationDefinition } from '../types';",
+    "import type { operations } from './openapi';",
     "",
-    "export const OPERATION_DEFINITIONS = {",
   ];
+
+  lines.push("export const OPERATION_OPENAPI_IDS = {");
+  for (const operation of operationsList) {
+    lines.push(
+      `  ${operation.operationId}: '${operation.openApiOperationId}',`,
+    );
+  }
+  lines.push("} as const;");
+  lines.push("");
+  lines.push("export const OPERATION_DEFINITIONS = {");
 
   for (const operation of operationsList) {
     lines.push(
@@ -126,6 +159,74 @@ function buildOperationsFile(operationsList) {
   lines.push("");
   lines.push("export type OperationId = keyof typeof OPERATION_DEFINITIONS;");
   lines.push("");
+  lines.push(
+    "type OpenApiOperationId<T extends OperationId> = (typeof OPERATION_OPENAPI_IDS)[T];",
+  );
+  lines.push(
+    "type OperationSpec<T extends OperationId> = OpenApiOperationId<T> extends keyof operations ? operations[OpenApiOperationId<T>] : never;",
+  );
+  lines.push("");
+  lines.push("type NormalizeNever<T> = [T] extends [never] ? undefined : T;");
+  lines.push("type ExtractContent<T> = T extends { content: infer C }");
+  lines.push("  ? C extends Record<string, unknown>");
+  lines.push("    ? C[keyof C]");
+  lines.push("    : unknown");
+  lines.push("  : null;");
+  lines.push("type SuccessResponse<T extends { responses: unknown }> =");
+  lines.push("  | (T['responses'] extends { 200: infer R } ? ExtractContent<R> : never)");
+  lines.push("  | (T['responses'] extends { 201: infer R } ? ExtractContent<R> : never)");
+  lines.push("  | (T['responses'] extends { 202: infer R } ? ExtractContent<R> : never)");
+  lines.push("  | (T['responses'] extends { 203: infer R } ? ExtractContent<R> : never)");
+  lines.push("  | (T['responses'] extends { 204: infer R } ? ExtractContent<R> : never)");
+  lines.push("  | (T['responses'] extends { 205: infer R } ? ExtractContent<R> : never)");
+  lines.push("  | (T['responses'] extends { 206: infer R } ? ExtractContent<R> : never);");
+  lines.push("");
+  lines.push("type QueryForOperation<T extends OperationId> = NormalizeNever<");
+  lines.push("  OperationSpec<T> extends { parameters: { query?: infer Q } } ? Q : never");
+  lines.push(">;");
+  lines.push("type PathForOperation<T extends OperationId> = NormalizeNever<");
+  lines.push("  OperationSpec<T> extends { parameters: { path?: infer P } } ? P : never");
+  lines.push(">;");
+  lines.push("type BodyForOperation<T extends OperationId> = NormalizeNever<");
+  lines.push("  OperationSpec<T> extends { requestBody: infer R }");
+  lines.push("    ? ExtractContent<R>");
+  lines.push("    : OperationSpec<T> extends { requestBody?: infer R }");
+  lines.push("      ? ExtractContent<R>");
+  lines.push("      : never");
+  lines.push(">;");
+  lines.push("type ResponseForOperation<T extends OperationId> = NormalizeNever<");
+  lines.push("  SuccessResponse<OperationSpec<T>>");
+  lines.push("> extends infer R");
+  lines.push("  ? [R] extends [undefined]");
+  lines.push("    ? unknown");
+  lines.push("    : R");
+  lines.push("  : unknown;");
+  lines.push("");
+  lines.push("type OperationArgs<T extends OperationId> = {");
+  lines.push("  headers?: HeadersInit;");
+  lines.push("} & (OperationSpec<T> extends { parameters: { path: infer P } }");
+  lines.push("  ? { path: P }");
+  lines.push("  : PathForOperation<T> extends undefined");
+  lines.push("    ? { path?: undefined }");
+  lines.push("    : { path?: PathForOperation<T> })");
+  lines.push("& (QueryForOperation<T> extends undefined");
+  lines.push("  ? { query?: undefined }");
+  lines.push("  : { query?: QueryForOperation<T> })");
+  lines.push("& (OperationSpec<T> extends { requestBody: unknown }");
+  lines.push("  ? { body: BodyForOperation<T> }");
+  lines.push("  : BodyForOperation<T> extends undefined");
+  lines.push("    ? { body?: undefined }");
+  lines.push("    : { body?: BodyForOperation<T> });");
+  lines.push("");
+  for (const operation of operationsList) {
+    lines.push(
+      `export type ${operation.operationId}Args = OperationArgs<'${operation.operationId}'>;`,
+    );
+    lines.push(
+      `export type ${operation.operationId}Response = ResponseForOperation<'${operation.operationId}'>;`,
+    );
+  }
+  lines.push("");
 
   return `${lines.join("\n")}\n`;
 }
@@ -133,8 +234,11 @@ function buildOperationsFile(operationsList) {
 function buildResourcesFile(resources) {
   const lines = [
     "import { BaseClient } from '../base';",
-    "import type { ApiResult, GeneratedMethodArgs } from '../types';",
+    "import type { ApiResult } from '../types';",
     "import { OPERATION_DEFINITIONS } from './operations';",
+    "import type {",
+    ...collectOperationTypeImports(resources),
+    "} from './operations';",
     "",
     "export interface GeneratedResourceConstructors {",
   ];
@@ -154,19 +258,26 @@ function buildResourcesFile(resources) {
     const className = `${toPascalCase(resourceName)}Resource`;
     lines.push(`export class ${className} extends BaseClient {`);
     for (const operation of operationsForResource) {
+      const argsType = `${operation.operationId}Args`;
+      const responseType = `${operation.operationId}Response`;
+      const requiresArgs =
+        operation.hasRequiredPathParams || operation.hasRequiredBody;
+      const signature = requiresArgs
+        ? `  ${operation.operationId}(args: ${argsType}): Promise<${responseType}> {`
+        : `  ${operation.operationId}(args: ${argsType} = {}): Promise<${responseType}> {`;
+      lines.push(signature);
       lines.push(
-        `  ${operation.operationId}(args: GeneratedMethodArgs = {}) {`,
-      );
-      lines.push(
-        `    return this.callOperation<unknown>(OPERATION_DEFINITIONS.${operation.operationId}, args);`,
+        `    return this.callOperation<${responseType}>(OPERATION_DEFINITIONS.${operation.operationId}, args);`,
       );
       lines.push("  }");
       lines.push("");
       lines.push(
-        `  ${operation.operationId}WithMeta(args: GeneratedMethodArgs = {}): Promise<ApiResult<unknown>> {`,
+        requiresArgs
+          ? `  ${operation.operationId}WithMeta(args: ${argsType}): Promise<ApiResult<${responseType}>> {`
+          : `  ${operation.operationId}WithMeta(args: ${argsType} = {}): Promise<ApiResult<${responseType}>> {`,
       );
       lines.push(
-        `    return this.callOperationWithMeta<unknown>(OPERATION_DEFINITIONS.${operation.operationId}, args);`,
+        `    return this.callOperationWithMeta<${responseType}>(OPERATION_DEFINITIONS.${operation.operationId}, args);`,
       );
       lines.push("  }");
       lines.push("");
@@ -187,4 +298,15 @@ function buildResourcesFile(resources) {
   lines.push(`export type GeneratedResourceMixin = ${intersections};`);
 
   return `${lines.join("\n")}\n`;
+}
+
+function collectOperationTypeImports(resources) {
+  const names = [];
+  for (const operationsForResource of Object.values(resources)) {
+    for (const operation of operationsForResource) {
+      names.push(`  ${operation.operationId}Args,`);
+      names.push(`  ${operation.operationId}Response,`);
+    }
+  }
+  return names;
 }
