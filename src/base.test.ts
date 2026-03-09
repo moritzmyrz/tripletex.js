@@ -73,4 +73,39 @@ describe('Base transport behavior', () => {
     });
     await expect(client.Country_search()).rejects.toBeInstanceOf(TripletexRequestError);
   });
+
+  it('wraps fetch transport failures in typed request errors', async () => {
+    const fetchMock = jest.fn().mockRejectedValue(new Error('connect ECONNREFUSED'));
+    global.fetch = fetchMock as unknown as typeof fetch;
+
+    const client = new TripletexClient();
+    await expect(client.Country_search()).rejects.toMatchObject({
+      status: 0,
+      statusText: 'Request failed before receiving a response',
+      message: 'connect ECONNREFUSED'
+    });
+    await expect(client.Country_search()).rejects.toBeInstanceOf(TripletexRequestError);
+  });
+
+  it('wraps invalid JSON responses in typed request errors', async () => {
+    const fetchMock = jest.fn().mockResolvedValue(
+      new Response('not-json', {
+        status: 200,
+        statusText: 'OK',
+        headers: {
+          'content-type': 'application/json',
+          'x-tlx-request-id': 'req-bad-json'
+        }
+      })
+    );
+    global.fetch = fetchMock as unknown as typeof fetch;
+
+    const client = new TripletexClient();
+    await expect(client.Country_search()).rejects.toMatchObject({
+      status: 200,
+      statusText: 'OK',
+      message: expect.stringContaining('JSON')
+    });
+    await expect(client.Country_search()).rejects.toBeInstanceOf(TripletexRequestError);
+  });
 });

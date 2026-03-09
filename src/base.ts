@@ -52,17 +52,27 @@ export class BaseClient {
     const headers = this.mergeHeaders(options.headers);
     const body = options.body === undefined ? undefined : JSON.stringify(options.body);
 
-    const response = await this.fetchWithRateLimitRetry(
-      {
-        method: options.method ?? 'GET',
-        headers,
-        body
-      },
-      url
-    );
+    let response: Response;
+    try {
+      response = await this.fetchWithRateLimitRetry(
+        {
+          method: options.method ?? 'GET',
+          headers,
+          body
+        },
+        url
+      );
+    } catch (error) {
+      throw normalizeUnexpectedError(error);
+    }
 
     const meta = buildResponseMeta(response.headers);
-    const parsed = await parseResponseBody(response);
+    let parsed: unknown;
+    try {
+      parsed = await parseResponseBody(response);
+    } catch (error) {
+      throw normalizeUnexpectedError(error, response.status, response.statusText, meta);
+    }
 
     if (!response.ok) {
       throw new TripletexRequestError(response.status, response.statusText, parsed, meta);
@@ -179,4 +189,21 @@ function wait(ms: number): Promise<void> {
   return new Promise((resolve) => {
     setTimeout(resolve, ms);
   });
+}
+
+function normalizeUnexpectedError(
+  error: unknown,
+  status = 0,
+  statusText = 'Request failed before receiving a response',
+  meta = buildResponseMeta(new Headers())
+): TripletexRequestError {
+  if (error instanceof TripletexRequestError) {
+    return error;
+  }
+
+  if (error instanceof Error) {
+    return new TripletexRequestError(status, statusText, { message: error.message }, meta);
+  }
+
+  return new TripletexRequestError(status, statusText, { message: 'Unknown request error' }, meta);
 }
