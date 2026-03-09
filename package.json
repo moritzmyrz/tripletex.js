@@ -1,6 +1,6 @@
 {
   "name": "@moritzmyrz/tripletex.js",
-  "version": "0.1.1",
+  "version": "0.1.3",
   "description": "TypeScript SDK for the Tripletex API",
   "license": "GPL-3.0-or-later",
   "main": "dist/index.cjs",
@@ -20,9 +20,6 @@
     "check": "npm run typecheck && npm run lint && npm run test",
     "generate:resources": "node scripts/generate-resources.mjs"
   },
-  "repository": {
-    "type": "git"
-  },
   "engines": {
     "node": ">=18"
   },
@@ -35,5 +32,14 @@
     "ts-jest": "^29.4.6",
     "tsup": "^8.5.0",
     "typescript": "^5.9.2"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/moritzmyrz/tripletex.js.git"
+  },
+  "author": "Moritz André Myrseth <moritzmyrz@gmail.com>",
+  "bugs": {
+    "url": "https://github.com/moritzmyrz/tripletex.js/issues"
+  },
+  "homepage": "https://github.com/moritzmyrz/tripletex.js#readme"
 }

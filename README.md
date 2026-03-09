@@ -7,13 +7,13 @@ Default API base URL: `https://tripletex.no/v2`
 ## Install
 
 ```bash
-npm install tripletex.js
+npm install @moritzmyrz/tripletex.js
 ```
 
 ## Quick start
 
 ```ts
-import TripletexClient from 'tripletex.js';
+import TripletexClient from '@moritzmyrz/tripletex.js';
 
 const client = new TripletexClient();
 
