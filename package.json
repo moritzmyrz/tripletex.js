@@ -1,0 +1,39 @@
+{
+  "name": "tripletex.js",
+  "version": "0.1.0",
+  "description": "TypeScript SDK for the Tripletex API",
+  "license": "GPL-3.0-or-later",
+  "main": "dist/index.cjs",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "source": "src/index.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "rm -rf dist && tsup src/index.ts --format cjs,esm --dts",
+    "dev": "tsup src/index.ts --watch --format cjs,esm --dts",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint \"src/**/*.ts\" \"scripts/**/*.mjs\"",
+    "test": "jest --runInBand",
+    "test:ci": "jest --runInBand --coverage",
+    "check": "npm run typecheck && npm run lint && npm run test",
+    "generate:resources": "node scripts/generate-resources.mjs"
+  },
+  "repository": {
+    "type": "git"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "devDependencies": {
+    "@types/jest": "^30.0.0",
+    "@typescript-eslint/eslint-plugin": "^8.57.0",
+    "@typescript-eslint/parser": "^8.57.0",
+    "eslint": "^9.23.0",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.4.6",
+    "tsup": "^8.5.0",
+    "typescript": "^5.9.2"
+  }
+}
